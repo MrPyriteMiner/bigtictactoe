@@ -81,7 +81,7 @@ class Bigboard:
             return []
         leave = True
         for i in range(9):
-            if self.state[int(i/3)][i%3] is None:
+            if self.state[int(i/3)][i % 3].winner is None:
                 leave = False
         if leave:
             return []
@@ -192,9 +192,9 @@ class Node:
                         else:
                             score -= multiplier  # negative evaluation means False is winning
         if self.position.winner is True:
-            return 2*62  # large score since True won
+            score = 2**60  # large score since True won
         if self.position.winner is False:
-            return -2**62  # small score since False won
+            score = -2**60  # small score since False won
         if maximizing_player is False:
             score *= -1
         self.evaluation = score
@@ -248,30 +248,8 @@ def minimax(node, depth, alpha, beta, is_maximizing_player, maximizing_player):
         return value
 
 
-def move_sequence_test(index, board):
-    if index == 0:
-        board.move(0, 0, 2, 0, True)
-        board.move(2, 0, 0, 0, False)
-        board.move(0, 0, 1, 0, True)
-        board.move(1, 0, 0, 0, False)
-        board.move(0, 0, 0, 0, True)
-        board.move(1, 0, 1, 1, False)
-        board.move(1, 1, 2, 1, True)
-        board.move(2, 1, 1, 1, False)
-        board.move(1, 1, 0, 1, True)
-        board.move(0, 1, 1, 1, False)
-        board.move(1, 1, 1, 1, True)
-        board.move(2, 1, 2, 2, False)
-        board.move(2, 2, 0, 2, True)
-        board.move(0, 2, 2, 2, False)
-        board.move(2, 2, 1, 2, True)
-        board.move(1, 2, 2, 2, False)
-        board.move(2, 2, 2, 2, True)
-        board.move(0, 2, 2, 0, False)
-
-
 class Machine:
-    def __init__(self, player=False, depth=3):
+    def __init__(self, player=False, depth=3.):
         self.player = player
         self.depth = depth
 
@@ -287,33 +265,39 @@ class Machine:
 
 
 class Game:
-    def __init__(self):
+    def __init__(self, is_engine_1=False, is_engine_2=True):
+        self.engine = [is_engine_1, is_engine_2]
         self.board = Bigboard()
         self.move = 0
 
     def play(self):
         # Player 1 will be a real player (player True, X's)
         # Player 2 will be a machine (player False, O's)
-        machine = Machine(False, 4)
+        current_player = True
+        print(self.board)
         while self.board.winner is None:
-            while True:  # Player's move
-                string = input("Where do you wish to play? [bigX bigY smallX smallY] ")
-                move = string.split()
-                for i in range(len(move)):
-                    move[i] = int(move[i])
-                if len(move) != 4:
-                    print("That's an invalid move format, try again")
-                    continue
-                if self.board.move(move[0], move[1], move[2], move[3], True) is True:
-                    break
-                else:
-                    print("That's an invalid move location, try again")
+            if self.engine[1-int(current_player)] is False:
+                while True:  # Player's move
+                    string = input("Where do you wish to play? [bigX bigY smallX smallY] ")
+                    move = string.split()
+                    for i in range(len(move)):
+                        move[i] = int(move[i])
+                    if len(move) != 4:
+                        print("That's an invalid move format, try again")
+                        continue
+                    if self.board.move(move[0], move[1], move[2], move[3], current_player) is True:
+                        break
+                    else:
+                        print("That's an invalid move location, try again")
+            else:
+                machine = Machine(current_player, 3.01+self.move/30)
+                move = machine.find_move(self.board)
+                self.board.move(move[0], move[1], move[2], move[3], current_player)
+            current_player = not current_player
             print(self.board)
-            move = machine.find_move(self.board)
-            self.board.move(move[0], move[1], move[2], move[3], False)
-            print(self.board)
+            self.move += 1
 
 
 if __name__ == "__main__":
-    game = Game()
+    game = Game(True, True)
     game.play()
